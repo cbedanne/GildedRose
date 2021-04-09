@@ -4,6 +4,7 @@ package com.gildedrose;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 class GildedRose {
@@ -16,22 +17,18 @@ class GildedRose {
     private static final int QUALITY_UPPER_LIMIT = 50;
     private static final int QUALITY_LOWER_LIMIT = 0;
 
-
-
     public GildedRose(Item[] items) {
         this.items = items;
     }
 
-
     public List<Item> updateQuality() {
 
         List<Item> resultList = Arrays.stream(items)
-                .filter(item -> IncreasingItemsWhenApproachingSellIn.contains(item.name))
+                .filter(isItemInList(IncreasingItemsWhenApproachingSellIn))
                 .peek(item -> item.quality = getIncreasingQuality(item))
                 .peek(item -> item.quality = Math.min(item.quality, QUALITY_UPPER_LIMIT))
                 .peek(item->item.sellIn=item.sellIn-1)
                 .collect(Collectors.toList());
-
 
         List<Item> constantQualityItemList=Arrays.stream(items)
                 .filter(item->ConstantQuality.contains(item.name))
@@ -40,7 +37,7 @@ class GildedRose {
         resultList.addAll(constantQualityItemList);
 
         List<Item> fastdegradingItemsList = Arrays.stream(items)
-                .filter(item->(FastDegradingItems.contains(item.name)))
+                .filter(isItemInList(FastDegradingItems))
                 .peek(item->item.quality=item.quality-2)
                 .peek(item->item.sellIn=item.sellIn-1)
                 .collect(Collectors.toList());
@@ -48,7 +45,7 @@ class GildedRose {
         resultList.addAll(fastdegradingItemsList);
 
         List<Item> remainingItemList = Arrays.stream(items)
-                .filter(item->(!IncreasingItemsWhenApproachingSellIn.contains(item.name))&&(!ConstantQuality.contains(item.name))&&(!FastDegradingItems.contains(item.name)))
+                .filter(isItemInList(resultList.stream().map(item->item.name).collect(Collectors.toList())).negate())
                 .peek(item->item.quality=item.sellIn<0?item.quality-2:item.quality-1)
                 .peek(item->item.sellIn=item.sellIn-1)
                 .collect(Collectors.toList());
@@ -62,10 +59,12 @@ class GildedRose {
 
         return resultList;
 
-
-
-//
     }
+
+    private Predicate<Item> isItemInList(List<String> itemList){
+        return item->itemList.contains(item.name);
+    }
+
 
     private int getIncreasingQuality(Item item) {
 
